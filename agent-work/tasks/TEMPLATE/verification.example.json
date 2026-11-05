@@ -1,0 +1,17 @@
+{
+  "checks": [
+    {
+      "name": "unit tests",
+      "command": [
+        "python",
+        "-m",
+        "pytest"
+      ],
+      "status": "not_run",
+      "exit_code": null,
+      "evidence_file": null
+    }
+  ],
+  "requirements_verified": [],
+  "requirements_not_verified": []
+}

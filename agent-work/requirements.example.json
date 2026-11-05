@@ -1,0 +1,49 @@
+{
+  "feature": "Example material movement",
+  "design_document": "docs/design/material-movement.md",
+  "baseline_commit": "",
+  "requirements": [
+    {
+      "id": "MAT-001",
+      "description": "A movement preserves total material mass.",
+      "category": "invariant",
+      "priority": "critical",
+      "status": "planned",
+      "components": [
+        "MovementService",
+        "MaterialLedger"
+      ],
+      "verification": [
+        {
+          "type": "property_test",
+          "description": "Generated valid movements preserve total mass.",
+          "test_ids": [
+            "test_movement_preserves_mass"
+          ],
+          "evidence": []
+        }
+      ],
+      "notes": "Example only; replace with requirements from the actual design."
+    },
+    {
+      "id": "MAT-002",
+      "description": "A failed movement does not leave partial updates.",
+      "category": "reliability",
+      "priority": "critical",
+      "status": "planned",
+      "components": [
+        "MovementService"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Force a failure mid-operation and assert rollback.",
+          "test_ids": [
+            "test_movement_is_atomic"
+          ],
+          "evidence": []
+        }
+      ]
+    }
+  ]
+}

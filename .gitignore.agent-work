@@ -1,0 +1,5 @@
+# Optional: add these entries to your repository .gitignore if task artifacts
+# contain temporary outputs. Keep reviewed design/requirements/decision artifacts
+# under version control when they are useful engineering records.
+agent-work/quality-results.json
+agent-work/tasks/*/verification.json

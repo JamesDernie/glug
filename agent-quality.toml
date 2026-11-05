@@ -1,0 +1,32 @@
+# Edit these commands to match this repository.
+# Each command is an argument array; no shell expansion is performed.
+# A non-zero exit code fails the quality run.
+
+[quality]
+working_directory = "."
+
+[[quality.commands]]
+name = "unit-and-integration-tests"
+required = true
+argv = ["python", "-m", "pytest"]
+
+[[quality.commands]]
+name = "lint"
+required = false
+argv = ["ruff", "check", "."]
+
+# Examples you may enable:
+# [[quality.commands]]
+# name = "django-system-checks"
+# required = true
+# argv = ["python", "manage.py", "check"]
+#
+# [[quality.commands]]
+# name = "coverage"
+# required = true
+# argv = ["coverage", "run", "-m", "pytest"]
+#
+# [[quality.commands]]
+# name = "type-check"
+# required = false
+# argv = ["mypy", "."]

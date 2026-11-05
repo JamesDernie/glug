@@ -1,0 +1,16 @@
+{
+  "findings": [
+    {
+      "id": "REV-001",
+      "severity": "high",
+      "category": "correctness",
+      "file": "path/to/file.py",
+      "line": 42,
+      "evidence": "Describe the concrete code path.",
+      "impact": "Describe a realistic failure.",
+      "suggested_fix": "Describe a targeted correction.",
+      "verification": "Name the regression test that proves the fix.",
+      "status": "open"
+    }
+  ]
+}
