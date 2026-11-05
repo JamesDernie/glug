@@ -1,6 +1,6 @@
-# Glug - A Copilot Autonomous Engineer
+# Glug - An Autonomous Engineer for Copilot and Claude Code
 
-A Copilot-native, verification-oriented feature delivery framework for VS Code.
+A verification-oriented feature delivery framework for GitHub Copilot in VS Code and for Claude Code.
 
 It is deliberately a starter rather than a turnkey autonomous system: agent delegation and tool availability depend on the selected Copilot harness, VS Code version, enabled features, and your organization's policies. The deterministic Python scripts are the enforcement layer; the agents are responsible for reasoning and making changes.
 
@@ -13,6 +13,7 @@ It is deliberately a starter rather than a turnkey autonomous system: agent dele
 - `agent-work/` — task-state templates and a requirements manifest example.
 - `scripts/` — standard-library Python validation, quality runner, and report generator.
 - `agent-quality.toml` — commands you must adapt to your repository.
+- `CLAUDE.md` and `.claude/` — Claude Code wrappers around the same files (see [Using with Claude Code](#using-with-claude-code)).
 
 ## Install
 
@@ -59,6 +60,24 @@ For each feature, create a separate directory under `agent-work/tasks/<slug>/` c
 - `verification.json`
 
 The agent must update these files as durable state. Do not rely on chat history as the source of truth.
+
+## Using with Claude Code
+
+The `.github/` files remain the single source of truth. Claude Code uses thin wrappers that point back to them:
+
+| Copilot | Claude Code |
+|---|---|
+| `.github/copilot-instructions.md` | `CLAUDE.md` imports it with `@.github/copilot-instructions.md` |
+| `.github/skills/<name>/` | `.claude/skills/<name>` (relative symlink) |
+| `.github/agents/<role>.agent.md` | `.claude/agents/<role>.md` (tells the subagent to read the original first) |
+| `/build-feature` prompt + Feature Builder agent | `/build-feature` skill: `/build-feature <design-doc> <task-slug>` |
+
+Differences from Copilot:
+
+- **Feature Builder runs in the main session**, not as a subagent, because Claude Code subagents cannot start other subagents. It hands work to `requirements-analyst`, `codebase-researcher`, `test-engineer` and `code-reviewer` with the Agent tool, so delegation is always available.
+- **Tool access is slightly different.** `requirements-analyst` can write its two output files in the task directory and run the manifest validator. `code-reviewer` has Bash, limited by instruction to read-only git commands, so it can inspect the diff itself. As with Copilot, these are guardrails, not a security boundary.
+
+To install into another repository, also copy `CLAUDE.md` and `.claude/` (merge with any existing `CLAUDE.md`). Copy with symlinks preserved (for example `cp -R`, or `rsync -a`). On Windows, where Git may check symlinks out as plain text files, replace each `.claude/skills/<name>` symlink with a copy of the matching `.github/skills/<name>` folder.
 
 ## Python requirements
 
