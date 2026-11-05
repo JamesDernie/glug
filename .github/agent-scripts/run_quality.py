@@ -12,7 +12,7 @@ from pathlib import Path
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=Path("agent-quality.toml"))
+    parser.add_argument("--config", type=Path, default=Path(".github/agent-quality.toml"))
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--output", type=Path, default=Path("agent-work/quality-results.json"))
     args = parser.parse_args()

@@ -11,22 +11,22 @@ It is deliberately a starter rather than a turnkey autonomous system: agent dele
 - `.github/skills/*/SKILL.md` — portable, on-demand workflows.
 - `.github/prompts/build-feature.prompt.md` — reusable entry point.
 - `agent-work/` — task-state templates and a requirements manifest example.
-- `scripts/` — standard-library Python validation, quality runner, and report generator.
-- `agent-quality.toml` — commands you must adapt to your repository.
+- `.github/agent-scripts/` — standard-library Python validation, quality runner, and report generator.
+- `.github/agent-quality.toml` — commands you must adapt to your repository.
 - `CLAUDE.md` and `.claude/` — Claude Code wrappers around the same files (see [Using with Claude Code](#using-with-claude-code)).
 
 ## Install
 
-1. Copy/merge `.github/`, `scripts/`, `agent-work/`, and `agent-quality.toml` into your repository.
+1. Copy/merge `.github/` and `agent-work/` into your repository.
 2. Do not overwrite existing `copilot-instructions.md`; merge the engineering contract into it.
 3. Open the repository in VS Code and select the **Copilot** harness in Chat.
 4. Confirm Agent Skills and custom agents are enabled in your VS Code configuration.
-5. Review every command in `agent-quality.toml`. Replace the examples with commands that actually work in your project.
+5. Review every command in `.github/agent-quality.toml`. Replace the examples with commands that actually work in your project.
 6. Run the scripts locally before asking an agent to use them:
 
    ```bash
-   python scripts/validate_requirements.py agent-work/requirements.example.json
-   python scripts/run_quality.py --dry-run
+   python .github/agent-scripts/validate_requirements.py agent-work/requirements.example.json
+   python .github/agent-scripts/run_quality.py --dry-run
    ```
 
 7. Open Chat → Agent Customizations and verify the agents and skills are discovered.
@@ -85,7 +85,7 @@ Python 3.11+ (uses only the standard library). No package installation is requir
 
 ## Quality runner
 
-`agent-quality.toml` contains arrays of argument arrays. Each command runs without a shell, from the repository root. The runner captures stdout/stderr and writes `agent-work/quality-results.json`.
+`.github/agent-quality.toml` contains arrays of argument arrays. Each command runs without a shell, from the repository root. The runner captures stdout/stderr and writes `agent-work/quality-results.json`.
 
 Adapt commands to your stack. The sample includes pytest and Ruff; remove or replace them if your project uses different tools.
 

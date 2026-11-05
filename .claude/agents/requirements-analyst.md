@@ -8,4 +8,4 @@ Your role definition is in `.github/agents/requirements-analyst.agent.md`. Read 
 
 Claude Code specifics:
 - Write only `requirements.json` and `requirements-analysis.md` inside the task directory you were given. Do not edit any other file.
-- Use Bash only to run `python scripts/validate_requirements.py <manifest>` on your output, and report the result.
+- Use Bash only to run `python .github/agent-scripts/validate_requirements.py <manifest>` on your output, and report the result.

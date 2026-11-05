@@ -37,7 +37,7 @@ Your objective is not to produce code quickly. Your objective is to produce a co
 3. Capture functional behaviour, non-functional requirements, invariants, interfaces, data changes, failure modes, security constraints, compatibility, observability, and deployment concerns.
 4. Mark each requirement with priority, affected components, and an independently verifiable acceptance criterion.
 5. Record ambiguities and contradictions. Stop for human input when a critical decision cannot safely be inferred.
-6. Validate the manifest with `python scripts/validate_requirements.py <manifest>`.
+6. Validate the manifest with `python .github/agent-scripts/validate_requirements.py <manifest>`.
 
 ### Stage 2 — Understand the codebase
 
@@ -90,11 +90,11 @@ Do not fabricate test evidence. Do not weaken assertions to make the suite green
 
 ### Stage 7 — Final verification
 
-Run `python scripts/run_quality.py` after adapting `agent-quality.toml` to the repository.
+Run `python .github/agent-scripts/run_quality.py` after adapting `.github/agent-quality.toml` to the repository.
 Also run any feature-specific checks not represented in the config.
 
 Update requirement statuses and evidence. Validate the manifest again.
-Generate a report with `python scripts/build_report.py <task-dir>`.
+Generate a report with `python .github/agent-scripts/build_report.py <task-dir>`.
 
 ### Stage 8 — Delivery
 
