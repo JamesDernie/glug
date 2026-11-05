@@ -1,0 +1,1469 @@
+{
+  "feature": "Quality-runner timeouts and output limits",
+  "design_document": "design.md",
+  "baseline_commit": "4020eaa3efe0e67f2900a15df8d263cce01a71cb",
+  "requirements": [
+    {
+      "id": "QT-CFG-001",
+      "description": "The runner accepts an optional `[quality].default_timeout_seconds` set to a positive number (TOML integer or float) and uses it as the timeout for every command that does not set its own `timeout_seconds`.",
+      "category": "configuration",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "`[quality]` may set `default_timeout_seconds` (positive number)."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py",
+        ".github/agent-quality.toml"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Run with default_timeout_seconds = 5 and = 2.5 and no per-command override; assert exit code is not 2 and each record's timeout_seconds equals the configured value. Also run with a small default (e.g. 0.5) against a sleeping command and assert status 'timeout'.",
+          "test_ids": [
+            "test_default_timeout_integer_accepted",
+            "test_default_timeout_float_accepted",
+            "test_default_timeout_applies_to_commands"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-CFG-002",
+      "description": "When `[quality].default_timeout_seconds` is absent, the default timeout is 600 seconds.",
+      "category": "configuration",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "If omitted, it defaults to 600."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Run (dry-run and real fast command) with no timeout keys; assert every record has timeout_seconds == 600.",
+          "test_ids": [
+            "test_default_timeout_is_600_when_omitted"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-CFG-003",
+      "description": "A `timeout_seconds` value on a `[[quality.commands]]` entry overrides the default timeout for that command only; other commands keep the default.",
+      "category": "configuration",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "Each `[[quality.commands]]` entry may set `timeout_seconds`, which overrides the default for that command."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Two sleeping commands (sleep 2): first has timeout_seconds = 0.5, second uses default_timeout_seconds = 10. Assert first is 'timeout' with timeout_seconds 0.5, second is 'passed' with timeout_seconds 10. Also the inverse: a long default with a short override kills only the overridden command.",
+          "test_ids": [
+            "test_per_command_timeout_overrides_default",
+            "test_override_does_not_leak_to_other_commands"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-CFG-004",
+      "description": "Per-command `timeout_seconds` accepts the same value domain as `default_timeout_seconds` (positive TOML integer or float) and is subject to the same rejection rules (QT-VAL-001..004, QT-CFG-008).",
+      "category": "configuration",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a72 Configuration",
+        "rationale": "The design types only default_timeout_seconds as 'positive number'; timeout_seconds overrides the same quantity, and the rejection rule in \u00a72 covers 'values' generally, so the same domain and rules apply. Floats are therefore accepted for timeout_seconds. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parametrised: timeout_seconds in {1, 1.5} accepted; {0, -1, 0.0, \"5\", true, false, [1]} rejected with exit 2 and the field named.",
+          "test_ids": [
+            "test_command_timeout_value_domain"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-CFG-005",
+      "description": "The runner accepts an optional `[quality].max_output_chars` set to a positive TOML integer.",
+      "category": "configuration",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "`[quality]` may set `max_output_chars` (positive integer, default 20000)."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars = 1 and = 10 accepted; a command printing more than that is truncated to that length.",
+          "test_ids": [
+            "test_max_output_chars_positive_integer_accepted"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-CFG-006",
+      "description": "When `[quality].max_output_chars` is absent, the limit is 20000 characters.",
+      "category": "configuration",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "`[quality]` may set `max_output_chars` (positive integer, default 20000)."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "With no max_output_chars, a command printing exactly 20000 chars is not truncated and one printing 20001 chars is truncated to 20000 with stdout_original_chars == 20001.",
+          "test_ids": [
+            "test_max_output_chars_default_20000"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-CFG-007",
+      "description": "A float value for `max_output_chars`, including an integral float such as 20000.0, is rejected: exit code 2, error naming `max_output_chars`, nothing run.",
+      "category": "validation",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a72 Configuration",
+        "rationale": "The design says 'positive integer' and TOML distinguishes integers from floats, but it does not say whether integral floats are tolerated. Strict rejection is simplest, consistent and avoids silent coercion. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars in {20000.0, 1.5} -> exit 2, stderr contains 'max_output_chars', marker command did not run, evidence file not written.",
+          "test_ids": [
+            "test_max_output_chars_float_rejected"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-CFG-008",
+      "description": "Non-finite floats (`inf`, `-inf`, `nan`, all valid TOML) are rejected for `default_timeout_seconds` and `timeout_seconds` with exit code 2 and an error naming the field.",
+      "category": "validation",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a71 Purpose / \u00a72 Configuration",
+        "rationale": "nan is not a positive number and -inf is negative, but +inf is arguably 'positive'; accepting it would disable the timeout and contradict the purpose that the runner 'must never hang indefinitely'. The design does not address non-finite values. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parametrised over inf, -inf, nan for both timeout fields: exit 2, field named, nothing run.",
+          "test_ids": [
+            "test_non_finite_timeouts_rejected"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-001",
+      "description": "A zero value (0 or 0.0) for `default_timeout_seconds`, `timeout_seconds` or `max_output_chars` is rejected.",
+      "category": "validation",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "Zero, negative, non-numeric or boolean values make the runner stop before running anything, with exit code 2 and an error message naming the offending field."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parametrised over the three fields with 0 (and 0.0 for timeouts): exit 2, stderr names field, no command ran.",
+          "test_ids": [
+            "test_zero_rejected"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-002",
+      "description": "A negative value for `default_timeout_seconds`, `timeout_seconds` or `max_output_chars` is rejected.",
+      "category": "validation",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "Zero, negative, non-numeric or boolean values make the runner stop before running anything, with exit code 2 and an error message naming the offending field."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parametrised over the three fields with -1 (and -0.5 for timeouts): exit 2, field named, nothing ran.",
+          "test_ids": [
+            "test_negative_rejected"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-003",
+      "description": "A non-numeric value (string, including numeric-looking strings such as \"600\"; array; inline table; TOML date/time) for `default_timeout_seconds`, `timeout_seconds` or `max_output_chars` is rejected.",
+      "category": "validation",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "Zero, negative, non-numeric or boolean values make the runner stop before running anything, with exit code 2 and an error message naming the offending field."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parametrised over fields x {\"600\", \"abc\", [600], {a=1}, 1979-05-27}: exit 2, field named, nothing ran.",
+          "test_ids": [
+            "test_non_numeric_rejected"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-004",
+      "description": "A boolean value (`true` or `false`) for `default_timeout_seconds`, `timeout_seconds` or `max_output_chars` is rejected, even though Python's bool is a subclass of int.",
+      "category": "validation",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "Zero, negative, non-numeric or boolean values make the runner stop before running anything, with exit code 2 and an error message naming the offending field."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parametrised over fields x {true, false}: exit 2, field named, nothing ran. `true` is the key mutant: an isinstance(x, int) check with x > 0 would accept it.",
+          "test_ids": [
+            "test_boolean_rejected"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-005",
+      "description": "Any invalid timeout or output setting makes the runner exit with code 2.",
+      "category": "validation",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "with exit code 2"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Covered by every QT-VAL/QT-CFG rejection case: assert returncode == 2 exactly (not merely non-zero).",
+          "test_ids": [
+            "test_zero_rejected",
+            "test_negative_rejected",
+            "test_non_numeric_rejected",
+            "test_boolean_rejected"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-006",
+      "description": "The validation error message contains the name of the offending field (`default_timeout_seconds`, `timeout_seconds` or `max_output_chars`); for `timeout_seconds` it also identifies the command (by name).",
+      "category": "validation",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "an error message naming the offending field"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Assert stderr contains the exact field name; for a per-command error also assert the command name appears (mirrors the existing `ERROR: {name}: argv ...` format).",
+          "test_ids": [
+            "test_validation_error_names_field"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ],
+      "notes": "Including the command name for per-command errors is an inferred extension, consistent with the existing argv message; see analysis."
+    },
+    {
+      "id": "QT-VAL-007",
+      "description": "Validation errors are written to stderr with the existing `ERROR:` prefix convention.",
+      "category": "observability",
+      "priority": "low",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a72 Configuration",
+        "rationale": "The design says this 'matches how a bad argv is handled today'; today's argv error is printed to stderr as 'ERROR: <name>: ...'. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Assert the error appears in stderr (not stdout) and begins with 'ERROR:'.",
+          "test_ids": [
+            "test_validation_error_on_stderr"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-008",
+      "description": "All timeout and output settings, including `timeout_seconds` on every command entry, are validated before any command is executed; an invalid value on a later command prevents earlier commands from running.",
+      "category": "validation",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "make the runner stop before running anything"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Config: command 1 is valid and writes a marker file; command 2 has timeout_seconds = 0. Assert exit 2 and the marker file does not exist. Repeat with invalid [quality] fields.",
+          "test_ids": [
+            "test_invalid_later_command_timeout_runs_nothing"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-009",
+      "description": "On a validation failure of the new settings no evidence file is written, and an existing evidence file at the output path is left unchanged.",
+      "category": "data_integrity",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a72 Configuration",
+        "rationale": "The design says handling 'matches how a bad argv is handled today'; today the argv error returns 2 before the evidence file is written. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Pre-create the output file with sentinel content; run with an invalid setting; assert content is unchanged. Also with no pre-existing file, assert none is created.",
+          "test_ids": [
+            "test_validation_failure_writes_no_evidence"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-VAL-010",
+      "description": "`argv` validation moves into the upfront validation pass: an invalid `argv` on any command makes the runner exit 2 with its existing `ERROR: <name>: argv must be a non-empty array of strings.` message before any command runs (and without writing evidence).",
+      "category": "validation",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a72 Configuration / \u00a76 Compatibility",
+        "rationale": "The design says the new validation 'matches how a bad argv is handled today', but at baseline argv is checked mid-loop. Human decision 2026-11-05 (D-001): move argv validation upfront for consistency with 'before running anything'. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Config: command 1 valid and writes a marker file; command 2 has an invalid argv. Assert exit 2, the argv error on stderr, no marker file, and no evidence file.",
+          "test_ids": [
+            "test_invalid_later_argv_runs_nothing",
+            "test_dry_run_validates_argv"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-001",
+      "description": "A command still running when its effective timeout elapses is killed and the runner does not wait for it beyond the kill.",
+      "category": "functional",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "A command that runs past its timeout is killed."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Command `python -c 'import time; time.sleep(30)'` with timeout_seconds = 0.5; assert the runner finishes in well under 30 s (e.g. < 10 s) and the child PID (written to a file by the child) is no longer alive.",
+          "test_ids": [
+            "test_timed_out_command_is_killed"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-002",
+      "description": "A timed-out command's record has `status` equal to \"timeout\".",
+      "category": "evidence",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "Its record gets `status: \"timeout\"`"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parse quality-results.json after a timeout; assert record status == 'timeout'.",
+          "test_ids": [
+            "test_timeout_record_status"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-003",
+      "description": "A timed-out command's record has `exit_code` equal to JSON null.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "`exit_code: null`"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Assert record exit_code is None (not -9 or the kill signal's return code).",
+          "test_ids": [
+            "test_timeout_record_exit_code_null"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-004",
+      "description": "A timed-out command's record has `duration_seconds` set to the measured elapsed time (rounded to 3 decimals as for other records), which is at least the timeout used.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "its measured `duration_seconds`"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "With timeout 0.5 against sleep 30: assert duration_seconds is a float, >= 0.5 (allowing rounding tolerance) and < 10.",
+          "test_ids": [
+            "test_timeout_record_duration"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ],
+      "notes": "The 3-decimal rounding is inferred from the existing code path."
+    },
+    {
+      "id": "QT-TO-005",
+      "description": "A timed-out command's record `stdout` and `stderr` contain the output the command produced before it was killed (subject to truncation), not empty strings.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "whatever output it produced before being killed"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Child prints 'BEFORE-OUT' to stdout and 'BEFORE-ERR' to stderr with flush=True, then sleeps 30; timeout 0.5. Assert record stdout contains 'BEFORE-OUT' and stderr contains 'BEFORE-ERR', and both are JSON strings.",
+          "test_ids": [
+            "test_timeout_record_keeps_partial_output"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-006",
+      "description": "Partial output from a timeout is always stored as a string: bytes from `subprocess.TimeoutExpired` are decoded with the same encoding text mode would use (locale preferred encoding) using `errors=\"replace\"`, and `None` becomes an empty string.",
+      "category": "reliability",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a73 Timeout behaviour",
+        "rationale": "Python documents that TimeoutExpired.stdout/stderr are bytes when captured regardless of text=True, and may be None. The design does not say how to convert them; bytes are not JSON-serialisable and a kill can split a multibyte character, so lossy decoding is needed to avoid crashing the runner. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Child writes raw invalid UTF-8 bytes (e.g. b'\\xff\\xfe') and a truncated multibyte sequence to stdout then sleeps; assert runner exits normally, evidence is valid JSON and stdout is a str.",
+          "test_ids": [
+            "test_timeout_partial_output_undecodable_bytes",
+            "test_timeout_without_output_records_empty_strings"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        },
+        {
+          "type": "unit_test",
+          "description": "Helper converting TimeoutExpired output: None -> '', b'abc' -> 'abc', str passthrough.",
+          "test_ids": [],
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-007",
+      "description": "A timeout on a required command makes `overall_status` \"failed\".",
+      "category": "functional",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "A timeout on a required command makes the overall result `failed`."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Single required command that times out, all others pass: assert overall_status == 'failed'. Also with `required` omitted (defaults to true).",
+          "test_ids": [
+            "test_required_timeout_fails_overall",
+            "test_default_required_timeout_fails_overall"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-008",
+      "description": "When a required command times out, the runner's process exit code is 1.",
+      "category": "functional",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a73 Timeout behaviour",
+        "rationale": "The existing runner returns 1 exactly when the overall result is failed; the design makes a required timeout a failed overall result. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Assert returncode == 1 in the required-timeout scenario.",
+          "test_ids": [
+            "test_required_timeout_exit_code_1"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-009",
+      "description": "A timeout on an optional (`required = false`) command does not make `overall_status` \"failed\"; if nothing else fails the overall status is \"passed\" and the exit code is 0.",
+      "category": "functional",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "A timeout on an optional command does not."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Optional command times out, required command passes: assert overall_status == 'passed', exit 0, optional record status 'timeout'.",
+          "test_ids": [
+            "test_optional_timeout_does_not_fail_overall"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-010",
+      "description": "After a command times out, the runner continues to execute the remaining commands in order and records them.",
+      "category": "functional",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a73 Timeout behaviour",
+        "quote": "The runner carries on with the remaining commands after a timeout."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Three commands: pass, required timeout, pass (writes marker). Assert three records in order with statuses passed/timeout/passed and the marker exists.",
+          "test_ids": [
+            "test_runner_continues_after_timeout"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TO-011",
+      "description": "On a timeout the console shows the command's partial stdout/stderr (untruncated, like normal output) and an `ERROR:` line on stderr stating that the command timed out and the timeout used.",
+      "category": "observability",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a73 Timeout behaviour / \u00a74 Output truncation",
+        "rationale": "The design says console output is not truncated but does not say whether partial output or any message is printed for a timeout. Printing both mirrors the passed/failed path (output echoed) and the error path (ERROR: line). Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Capture runner stdout/stderr in the partial-output timeout scenario; assert 'BEFORE-OUT' appears on runner stdout, 'BEFORE-ERR' and a timeout message containing the command name appear on runner stderr.",
+          "test_ids": [
+            "test_timeout_console_output"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-001",
+      "description": "If a record's stdout is longer than `max_output_chars`, the evidence keeps only the last `max_output_chars` characters of it.",
+      "category": "evidence",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a74 Output truncation",
+        "quote": "If stdout or stderr is longer than `max_output_chars`, the evidence keeps the **last** `max_output_chars` characters"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars = 10; child prints 'HEAD' + 'x'*50 + '0123456789' (no newline). Assert stdout == '0123456789' (tail kept, head dropped).",
+          "test_ids": [
+            "test_stdout_truncated_keeps_tail"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-002",
+      "description": "The `max_output_chars` limit is applied to stderr independently of stdout: each stream is checked and truncated on its own length.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Configuration",
+        "quote": "It applies separately to stdout and to stderr."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars = 10; child writes 30 chars to stderr and 5 to stdout. Assert stderr is the last 10 chars with stderr_truncated true, and stdout is intact with stdout_truncated false. Then the mirror case.",
+          "test_ids": [
+            "test_streams_truncated_independently"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-003",
+      "description": "When stdout (or stderr) is truncated, the record sets `stdout_truncated` (or `stderr_truncated`) to `true`.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a74 Output truncation",
+        "quote": "sets `stdout_truncated` / `stderr_truncated` to `true`"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "In the truncation scenarios assert the flag is JSON true for the truncated stream.",
+          "test_ids": [
+            "test_stdout_truncated_keeps_tail",
+            "test_streams_truncated_independently"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-004",
+      "description": "When stdout (or stderr) is truncated, the record sets `stdout_original_chars` (or `stderr_original_chars`) to the length in characters of the full output before truncation.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a74 Output truncation",
+        "quote": "records the original length in `stdout_original_chars` / `stderr_original_chars`."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "In the QT-TR-001 scenario assert stdout_original_chars == 64 (4 + 50 + 10).",
+          "test_ids": [
+            "test_stdout_truncated_keeps_tail"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-005",
+      "description": "Output whose length equals `max_output_chars` exactly is not truncated; output one character longer is truncated.",
+      "category": "boundary",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a74 Output truncation",
+        "quote": "If stdout or stderr is longer than `max_output_chars`"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars = 10: output of length 10 -> unchanged, truncated false; length 11 -> last 10 chars, truncated true, original 11. Kills off-by-one mutants (>= vs >).",
+          "test_ids": [
+            "test_truncation_boundary"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-006",
+      "description": "Every check record (all statuses: passed, failed, timeout, error, dry_run) always contains `stdout_truncated`, `stderr_truncated`, `stdout_original_chars` and `stderr_original_chars`; when a stream is not truncated its flag is `false` and its original-chars value is the stored length (0 for empty output).",
+      "category": "evidence",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a74 Output truncation",
+        "rationale": "The design only specifies the values when truncation happens. Always emitting the fields gives consumers a stable schema and makes 'not truncated' explicit; omitting them is the alternative. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Records for passed, failed, error (missing executable), timeout and dry_run: assert all four keys present, with false/len(stored) for non-truncated streams.",
+          "test_ids": [
+            "test_truncation_fields_present_on_all_records"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-007",
+      "description": "Console echo of command stdout/stderr is the full, untruncated output, regardless of `max_output_chars`.",
+      "category": "observability",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a74 Output truncation",
+        "quote": "The console output is not truncated."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars = 10; child prints 'HEAD' + 60 more chars. Assert runner stdout contains 'HEAD' and the full string while evidence stdout has 10 chars.",
+          "test_ids": [
+            "test_console_output_not_truncated"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-008",
+      "description": "Truncation also applies to partial output in timeout records and to the stderr message stored in error records.",
+      "category": "evidence",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a73 Timeout behaviour / \u00a74 Output truncation",
+        "rationale": "\u00a74 places a general limit on stdout/stderr in the evidence; \u00a71 requires the evidence to stay manageable. A timed-out command can produce unbounded output, so the limit has to cover it too. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars = 10; child prints 100 chars, flushes, sleeps past timeout. Assert status 'timeout', stdout length 10, stdout_truncated true, stdout_original_chars 100.",
+          "test_ids": [
+            "test_timeout_partial_output_truncated",
+            "test_error_record_stderr_truncated"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-TR-009",
+      "description": "Characters are counted as Python `str` code points of the decoded output (not bytes); the original-chars value is the code-point length before truncation, and truncation never splits the stored value into invalid text.",
+      "category": "evidence",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a74 Output truncation",
+        "rationale": "The design says 'characters' without defining them. Code points are what the existing text-mode capture produces and are what JSON consumers count. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "max_output_chars = 3; child prints 'a\u00e9\u20ac\ud83d\ude00b' (UTF-8 locale). Assert stdout == '\u20ac\ud83d\ude00b' and stdout_original_chars == 5.",
+          "test_ids": [
+            "test_truncation_counts_code_points"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-EV-001",
+      "description": "Every check record (all statuses, including error and dry_run) contains `timeout_seconds` set to the effective timeout for that command: its own `timeout_seconds` if set, else `default_timeout_seconds`, else 600.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a75 Evidence",
+        "quote": "Each check record gains `timeout_seconds` (the value actually used)."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Mixed config (one override, one default) with passed, failed, error (missing executable) and timeout records; assert each record's timeout_seconds equals the expected effective value.",
+          "test_ids": [
+            "test_timeout_seconds_recorded_on_every_record"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-EV-002",
+      "description": "`timeout_seconds` is recorded as the configured numeric value without type conversion (integer stays integer, float stays float; the built-in default is the integer 600).",
+      "category": "evidence",
+      "priority": "low",
+      "status": "verified",
+      "source": {
+        "kind": "assumption",
+        "ref": "\u00a75 Evidence",
+        "rationale": "'The value actually used' does not specify a representation; preserving the configured value is the most faithful reading and avoids 600 vs 600.0 drift. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Assert JSON shows 600 (not 600.0) by default and 2.5 for a float override.",
+          "test_ids": [
+            "test_timeout_seconds_type_preserved"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-DR-001",
+      "description": "With `--dry-run` the runner still executes no command (records keep status \"dry_run\").",
+      "category": "functional",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a75 Evidence",
+        "quote": "`--dry-run` still runs nothing"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Dry-run with a command that would write a marker file; assert the marker does not exist and all records are 'dry_run'.",
+          "test_ids": [
+            "test_dry_run_runs_nothing"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-DR-002",
+      "description": "With `--dry-run`, invalid timeout or output settings are rejected exactly as in a real run (exit code 2, error naming the field, no evidence written).",
+      "category": "validation",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a75 Evidence",
+        "quote": "but it does validate the timeout and output settings"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Parametrise the main rejection cases with --dry-run; assert exit 2, field named, no evidence file.",
+          "test_ids": [
+            "test_dry_run_validates_settings",
+            "test_dry_run_validates_argv"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-DR-003",
+      "description": "Each dry-run record reports in `timeout_seconds` the timeout the command would use.",
+      "category": "evidence",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a75 Evidence",
+        "quote": "reports the timeout each command would use."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Dry-run with default 30 and one override 5; assert record timeout_seconds 5 and 30 respectively.",
+          "test_ids": [
+            "test_dry_run_reports_timeout"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-COMP-001",
+      "description": "A config file with none of the new keys produces the same behaviour as at the baseline commit (statuses, overall_status, exit codes, console output, existing record fields), except that each command now has a 600-second timeout.",
+      "category": "compatibility",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a76 Compatibility",
+        "quote": "Existing config files with none of the new keys behave as before, except for the 600-second default timeout."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py",
+        ".github/agent-quality.toml"
+      ],
+      "verification": [
+        {
+          "type": "regression_test",
+          "description": "Scenarios (pass, required fail, optional fail, missing executable, dry-run, no commands, bad argv, unreadable config) run against the baseline script and the new script; assert identical exit codes, overall_status and existing record fields (ignoring generated_at and duration_seconds).",
+          "test_ids": [
+            "test_legacy_config_behaviour_unchanged"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ],
+      "notes": "Legacy expectations in test_legacy_config_behaviour_unchanged are hand-written from baseline 4020eaa, not produced by running the baseline script (REV-004)."
+    },
+    {
+      "id": "QT-COMP-002",
+      "description": "Existing fields of `quality-results.json` (top-level: generated_at, working_directory, dry_run, overall_status, checks; per record: name, command, required, status, exit_code, duration_seconds, stdout, stderr) keep their names and meanings; new fields are only added.",
+      "category": "compatibility",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a76 Compatibility",
+        "quote": "Existing fields in `quality-results.json` keep their names and meanings."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py",
+        "agent-work/quality-results.json"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Assert the set of baseline keys is a subset of each new record's and payload's keys, with the same JSON types for non-timeout records.",
+          "test_ids": [
+            "test_existing_evidence_fields_preserved"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ],
+      "notes": "Tension: `stdout`/`stderr` may now hold only the tail and `status` gains a new value 'timeout'. See analysis A-8."
+    },
+    {
+      "id": "QT-COMP-003",
+      "description": "`overall_status` keeps exactly the values \"failed\", \"dry_run\" and \"passed\"; \"timeout\" appears only as a record status.",
+      "category": "compatibility",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a73 Timeout behaviour / \u00a76 Compatibility",
+        "rationale": "\u00a73 maps timeouts to an overall 'failed' (required) or no effect (optional), and \u00a76 preserves existing field meanings, so no new overall value is introduced. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Across all timeout scenarios assert overall_status is in {failed, dry_run, passed}.",
+          "test_ids": [
+            "test_overall_status_values_unchanged"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-COMP-004",
+      "description": "Process exit codes keep their meaning: 0 overall passed or dry-run, 1 overall failed, 2 configuration or usage error.",
+      "category": "compatibility",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a72 Configuration / \u00a76 Compatibility",
+        "rationale": "The design reuses exit code 2 for configuration errors and says existing behaviour is preserved; callers (CI, agents) rely on these codes. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Covered by the regression matrix plus timeout scenarios: 0 for optional timeout only, 1 for required timeout, 2 for invalid settings.",
+          "test_ids": [
+            "test_legacy_config_behaviour_unchanged",
+            "test_required_timeout_exit_code_1",
+            "test_optional_timeout_does_not_fail_overall"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-COMP-005",
+      "description": "The change uses only the Python 3.11 standard library and adds no dependencies.",
+      "category": "operations",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a71 Purpose",
+        "rationale": "The script is currently stdlib-only (tomllib, Python 3.11+), and the engineering contract forbids adding dependencies without justification; nothing in the design needs a dependency. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Inspect the diff: imports are stdlib-only and no dependency manifests changed.",
+          "test_ids": [],
+          "evidence": [
+            "Code review REV pass 1 and 2: only stdlib imports (locale added, math removed); no new dependencies."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-OOS-001",
+      "description": "Retries are out of scope: a timed-out (or failed) command is executed exactly once per run.",
+      "category": "scope",
+      "priority": "low",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a77 Out of scope",
+        "quote": "Retries."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Timed-out child appends a line to a counter file on start; assert exactly one line after the run.",
+          "test_ids": [
+            "test_timed_out_command_not_retried"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-OOS-002",
+      "description": "Parallel execution is out of scope: commands keep running sequentially in configured order, and a timeout does not overlap with the next command.",
+      "category": "scope",
+      "priority": "low",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a77 Out of scope",
+        "quote": "Running commands in parallel."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "Each child writes start/end timestamps; assert command N+1 starts after command N ends (or is killed).",
+          "test_ids": [
+            "test_commands_run_sequentially"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-OOS-003",
+      "description": "Killing whole process groups is out of scope: only the direct child process is killed, and the possibility of orphaned grandchild processes is recorded as a residual risk in the task's final report.",
+      "category": "scope",
+      "priority": "medium",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a77 Out of scope",
+        "quote": "Killing whole process groups (record this as a residual risk)."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py",
+        "agent-work/tasks/quality-timeouts/"
+      ],
+      "verification": [
+        {
+          "type": "review",
+          "description": "Confirm the implementation does not use start_new_session/os.killpg and that the final report and progress/decision records list orphaned grandchildren (and possible pipe-holding on Windows) as a residual risk.",
+          "test_ids": [],
+          "evidence": [
+            "Code review: no killpg/start_new_session in run_quality.py; residual risk documented in README Safety and decisions.md."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QT-NFR-001",
+      "description": "Invariant: every executed command runs with a finite, positive timeout, so a non-terminating direct child cannot make the runner hang.",
+      "category": "reliability",
+      "priority": "critical",
+      "status": "verified",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a71 Purpose",
+        "quote": "`run_quality.py` must never hang indefinitely"
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "integration_test",
+          "description": "A child that ignores SIGTERM and loops forever, with timeout 0.5: runner completes within a bounded time (e.g. < 10 s) with status 'timeout'.",
+          "test_ids": [
+            "test_runner_does_not_hang_on_unresponsive_child"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        },
+        {
+          "type": "review",
+          "description": "Confirm every subprocess invocation passes a timeout derived from validated config.",
+          "test_ids": [],
+          "evidence": []
+        }
+      ],
+      "notes": "Grandchildren that keep running after the direct child is killed are a residual risk (QT-OOS-003)."
+    },
+    {
+      "id": "QT-NFR-002",
+      "description": "Invariant: for every record, len(stdout) <= max_output_chars and len(stderr) <= max_output_chars, so per-record evidence output is bounded by 2 x max_output_chars characters.",
+      "category": "performance",
+      "priority": "high",
+      "status": "verified",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a71 Purpose / \u00a74 Output truncation",
+        "rationale": "Follows from \u00a74 applied to all records, and is the testable form of the \u00a71 goal that the evidence file 'must stay a manageable size'. Approved by user 2026-11-05."
+      },
+      "components": [
+        ".github/agent-scripts/run_quality.py"
+      ],
+      "verification": [
+        {
+          "type": "property_test",
+          "description": "For generated output lengths around and above a random small max_output_chars (stdlib random, seeded), assert the stored length is min(len, N), the stored value is a suffix of the original, and the flag equals len > N.",
+          "test_ids": [
+            "test_truncation_property"
+          ],
+          "evidence": [
+            "pytest tests: 158 passed (run_quality.py full suite 2026-11-05, agent-work/quality-results.json)"
+          ]
+        }
+      ]
+    }
+  ]
+}

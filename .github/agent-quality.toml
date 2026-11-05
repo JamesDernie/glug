@@ -1,6 +1,11 @@
 # Edit these commands to match this repository.
 # Each command is an argument array; no shell expansion is performed.
-# A non-zero exit code fails the quality run.
+# A non-zero exit code or a timeout on a required command fails the quality run.
+#
+# Optional settings (all values must be positive; invalid values stop the run with exit code 2):
+#   default_timeout_seconds = 600   # [quality]; seconds per command (int or float, max 1000000)
+#   max_output_chars = 20000        # [quality]; evidence keeps the last N chars of stdout and of stderr
+#   timeout_seconds = 1200          # per [[quality.commands]] entry; overrides the default (max 1000000)
 
 [quality]
 working_directory = "."

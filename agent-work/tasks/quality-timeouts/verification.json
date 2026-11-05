@@ -1,0 +1,135 @@
+{
+  "checks": [
+    {
+      "name": "unit-and-integration-tests",
+      "command": [
+        "python",
+        "-m",
+        "pytest"
+      ],
+      "required": true,
+      "status": "passed",
+      "exit_code": 0,
+      "evidence_file": "agent-work/quality-results.json"
+    },
+    {
+      "name": "lint",
+      "command": [
+        "ruff",
+        "check",
+        "."
+      ],
+      "required": false,
+      "status": "failed",
+      "exit_code": 1,
+      "evidence_file": "agent-work/quality-results.json"
+    },
+    {
+      "name": "baseline test run (Test Engineer)",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "tests"
+      ],
+      "status": "done",
+      "exit_code": 1,
+      "evidence_file": null,
+      "notes": "123 failed / 6 passed against 4020eaa run_quality.py; all failures missing behaviour"
+    },
+    {
+      "name": "mutation checks (8 mutants)",
+      "command": [
+        "manual"
+      ],
+      "status": "passed",
+      "exit_code": null,
+      "evidence_file": null,
+      "notes": "bool, isfinite, boundary >=, keep head, optional timeout fails, no upfront validation, no decode, no timeout: all killed"
+    },
+    {
+      "name": "review-fix regression tests vs pre-fix code",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "tests",
+        "-k",
+        "oversized or maximum_timeout or newlines_translated or coerce"
+      ],
+      "status": "passed",
+      "exit_code": null,
+      "evidence_file": null,
+      "notes": "22 failed / 7 passed on pre-fix implementation; all pass after fix"
+    },
+    {
+      "name": "requirements manifest validation",
+      "command": [
+        "python",
+        ".github/agent-scripts/validate_requirements.py",
+        "agent-work/tasks/quality-timeouts/requirements.json"
+      ],
+      "status": "passed",
+      "exit_code": 0,
+      "evidence_file": null
+    }
+  ],
+  "overall_quality_status": "passed",
+  "notes": "lint (optional) fails only on the 5 pre-existing baseline findings; no new findings. Test suite POSIX-only (skipped elsewhere). Windows not tested.",
+  "requirements_verified": [
+    "QT-CFG-001",
+    "QT-CFG-002",
+    "QT-CFG-003",
+    "QT-CFG-004",
+    "QT-CFG-005",
+    "QT-CFG-006",
+    "QT-CFG-007",
+    "QT-CFG-008",
+    "QT-VAL-001",
+    "QT-VAL-002",
+    "QT-VAL-003",
+    "QT-VAL-004",
+    "QT-VAL-005",
+    "QT-VAL-006",
+    "QT-VAL-007",
+    "QT-VAL-008",
+    "QT-VAL-009",
+    "QT-VAL-010",
+    "QT-TO-001",
+    "QT-TO-002",
+    "QT-TO-003",
+    "QT-TO-004",
+    "QT-TO-005",
+    "QT-TO-006",
+    "QT-TO-007",
+    "QT-TO-008",
+    "QT-TO-009",
+    "QT-TO-010",
+    "QT-TO-011",
+    "QT-TR-001",
+    "QT-TR-002",
+    "QT-TR-003",
+    "QT-TR-004",
+    "QT-TR-005",
+    "QT-TR-006",
+    "QT-TR-007",
+    "QT-TR-008",
+    "QT-TR-009",
+    "QT-EV-001",
+    "QT-EV-002",
+    "QT-DR-001",
+    "QT-DR-002",
+    "QT-DR-003",
+    "QT-COMP-001",
+    "QT-COMP-002",
+    "QT-COMP-003",
+    "QT-COMP-004",
+    "QT-COMP-005",
+    "QT-OOS-001",
+    "QT-OOS-002",
+    "QT-OOS-003",
+    "QT-NFR-001",
+    "QT-NFR-002"
+  ],
+  "requirements_not_verified": []
+}

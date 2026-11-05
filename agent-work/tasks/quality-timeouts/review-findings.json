@@ -1,0 +1,88 @@
+{
+  "findings": [
+    {
+      "id": "REV-001",
+      "severity": "medium",
+      "category": "correctness / validation",
+      "file": ".github/agent-scripts/run_quality.py",
+      "line": 19,
+      "evidence": "Very large finite timeouts (>= ~2147484 s, huge ints) passed validation, then raised OverflowError mid-run (exit 1, traceback, no evidence); a 400-digit int crashed math.isfinite inside validate().",
+      "impact": "Config error surfaced as a mid-run crash after earlier commands ran.",
+      "suggested_fix": "Upper bound MAX_TIMEOUT_SECONDS=1_000_000 via chained comparison; documented in README and toml.",
+      "verification": "test_oversized_timeouts_rejected, test_maximum_timeout_accepted",
+      "status": "fixed (confirmed by second review)"
+    },
+    {
+      "id": "REV-002",
+      "severity": "low",
+      "category": "correctness / consistency",
+      "file": ".github/agent-scripts/run_quality.py",
+      "line": 63,
+      "evidence": "Timeout partial output was not newline-translated like text=True output.",
+      "impact": "\\r kept in timeout evidence; lengths differ.",
+      "suggested_fix": "Translate \\r\\n and \\r to \\n after decoding.",
+      "verification": "test_timeout_partial_output_newlines_translated, test_coerce_timeout_output[crlf-bytes]",
+      "status": "fixed (confirmed by second review)"
+    },
+    {
+      "id": "REV-003",
+      "severity": "low",
+      "category": "documentation / operations",
+      "file": "README.md",
+      "line": 115,
+      "evidence": "Windows hang risk (post-kill communicate() waits for a grandchild holding the pipe) was not documented.",
+      "impact": "Windows users may over-trust the timeout.",
+      "suggested_fix": "README safety bullet extended.",
+      "verification": "Diff review",
+      "status": "fixed (confirmed by second review)"
+    },
+    {
+      "id": "REV-004",
+      "severity": "low",
+      "category": "test adequacy",
+      "file": "tests/test_run_quality.py",
+      "line": 167,
+      "evidence": "No unit test for decode_partial (str branch, locale encoding); POSIX-only harness had no skip marker; legacy expectations are hand-written rather than run against baseline.",
+      "impact": "Gaps in evidence for QT-TO-006 and QT-COMP-001.",
+      "suggested_fix": "Added test_coerce_timeout_output*, module-level skipif. Legacy test kept hand-written (derived from 4020eaa, recorded in verification).",
+      "verification": "test_coerce_timeout_output, test_coerce_timeout_output_invalid_bytes",
+      "status": "fixed (confirmed by second review)"
+    },
+    {
+      "id": "REV-005",
+      "severity": "low",
+      "category": "backwards compatibility",
+      "file": ".github/agent-scripts/run_quality.py",
+      "line": 136,
+      "evidence": "An unspecified '(dry run; timeout Ns)' console line was added.",
+      "impact": "Changes dry-run console output.",
+      "suggested_fix": "Removed; the timeout is reported in evidence.",
+      "verification": "Full suite",
+      "status": "fixed (confirmed by second review)"
+    },
+    {
+      "id": "REV-006",
+      "severity": "info",
+      "category": "correctness (pre-existing)",
+      "file": ".github/agent-scripts/run_quality.py",
+      "line": 102,
+      "evidence": "Non-table command entries -> AttributeError; completed command with undecodable bytes -> UnicodeDecodeError. Both at baseline.",
+      "impact": "Crash with exit 1 and no evidence (baseline behaviour).",
+      "suggested_fix": "Follow-up: validate entry type; errors='replace' in subprocess.run.",
+      "verification": "None in this change",
+      "status": "accepted (out of scope, D-007)"
+    },
+    {
+      "id": "REV-007",
+      "severity": "low",
+      "category": "documentation",
+      "file": "README.md",
+      "line": 95,
+      "evidence": "The 1000000 maximum was documented only for default_timeout_seconds, but it also applies to per-command timeout_seconds.",
+      "impact": "Minor user confusion.",
+      "suggested_fix": "Document the maximum for both fields.",
+      "verification": "Docs diff",
+      "status": "fixed"
+    }
+  ]
+}

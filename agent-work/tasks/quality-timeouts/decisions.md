@@ -1,0 +1,16 @@
+# Decisions
+
+Record date, decision, context, alternatives, rationale, consequences, and whether the decision was explicit in the design or inferred.
+
+| ID | Decision | Source (design / existing convention / inference) | Rationale | Consequences |
+|---|---|---|---|---|
+| D-001 (2026-11-05) | `argv` validation moves into a single upfront validation pass with the new settings (QT-VAL-010). | Human decision (resolves design contradiction A-1) | The design says settings are checked "before running anything", which "matches how a bad argv is handled today". At baseline argv is checked mid-loop (`run_quality.py:39-41`). The user chose consistency. | Visible change: when a later command has a bad argv, earlier commands no longer run. Exit code 2 and the message are unchanged. |
+| D-002 (2026-11-05) | Tests go in top-level `tests/test_run_quality.py`. | Human decision | Found by the existing `python -m pytest` command with no new config. pytest skips `.github/` (`norecursedirs` `.*`). | `tests/` is not part of what consumers copy (README "copy `.github/` and `agent-work/`"). |
+| D-003 (2026-11-05) | All four truncation fields appear on every check record (QT-TR-006). | Human decision | Stable schema. | Not-truncated records carry `false` and the stored length. |
+| D-004 (2026-11-05) | The other inferred/assumption requirements are accepted as drafted: QT-CFG-004, QT-CFG-007, QT-CFG-008, QT-VAL-007, QT-VAL-009, QT-TO-006, QT-TO-008, QT-TO-011, QT-TR-008, QT-TR-009, QT-EV-002, QT-COMP-003, QT-COMP-004, QT-COMP-005, QT-NFR-002. | Human approval of inferences | See `requirements-analysis.md` A-2..A-16. | Rejects float `max_output_chars`, rejects inf/nan timeouts, decodes partial output with errors="replace", prints an ERROR line on timeout, stays stdlib only. |
+| D-005 | Implement inside `run_quality.py` with small pure helpers. No new module. | Existing convention (`validate_requirements.py` helpers) | Smallest coherent change. | None. |
+| D-006 | `build_report.py` unchanged. | Inference (researcher §3) | It enumerates no statuses, so `timeout` renders as-is. | No timeout or truncation column in reports (possible follow-up). |
+| D-007 | Pre-existing lint findings and unhandled OSErrors (PermissionError, bad working_directory) are out of scope. | Inference | Not in the design. Avoids unrelated churn. | Lint (optional) stays failing on baseline findings. New code should add no new findings. |
+| D-008 | Timeouts are capped at `MAX_TIMEOUT_SECONDS = 1_000_000` (about 11.6 days). Larger values are rejected with exit 2. | Inference from review REV-001 (safest reversible choice) | Values of about 2147484 s or more overflow the OS poll timeout and crashed mid-run. A round cap well below the limit keeps validation upfront. | New validation boundary, documented in README and toml. The cap can be raised to about 2_000_000 if needed. |
+| D-009 | No dry-run console line for the timeout (REV-005). | Design §5 / QT-COMP-001 | The evidence already reports `timeout_seconds`, and this keeps console output compatible. | None. |
+| D-010 | REV-006 (non-table command entries, undecodable output of completed commands) is left as a follow-up. | D-007 | Baseline behaviour, not in the design. | Residual risk. |

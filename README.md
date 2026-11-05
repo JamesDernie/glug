@@ -87,11 +87,33 @@ Python 3.11+ (uses only the standard library). No package installation is requir
 
 `.github/agent-quality.toml` contains arrays of argument arrays. Each command runs without a shell, from the repository root. The runner captures stdout/stderr and writes `agent-work/quality-results.json`.
 
+Every setting, including each command's `argv`, is checked before any command runs. A bad value stops the runner with exit code 2 and an `ERROR:` message that names the field.
+
+Timeouts and output limits:
+
+- **Timeouts.** Each command has a timeout:
+  - `default_timeout_seconds` in `[quality]` sets it (default **600**).
+  - A per-command `timeout_seconds` overrides it.
+  - Both accept a whole or fractional number of seconds up to 1000000.
+  - A command that runs past its timeout is killed and recorded with `status: "timeout"` and `exit_code: null`, along with any output it had produced.
+  - A timeout fails the run only when the command is required.
+  - The runner then continues with the next command.
+  - Configs that never set a timeout now get the 600-second default, so raise it for long suites.
+- **Output limit.** `max_output_chars` in `[quality]` (default 20000) caps stdout and stderr separately in the evidence file:
+  - The **last** N characters are kept.
+  - `stdout_truncated` / `stderr_truncated` say whether a stream was cut.
+  - `stdout_original_chars` / `stderr_original_chars` give its full length.
+  - The console always shows the full output.
+- **Evidence.** Each check record includes the `timeout_seconds` it used, including under `--dry-run`, which validates settings but runs nothing.
+
+Tests for the runner live in `tests/test_run_quality.py`.
+
 Adapt commands to your stack. The sample includes pytest and Ruff; remove or replace them if your project uses different tools.
 
 ## Safety / merge policy
 
 - The scripts never commit, push, merge, deploy, or modify production data.
 - The quality runner executes commands you configure. Review them before running.
+- On timeout the runner kills only the command's own process. Processes that command started (for example test workers or servers) may keep running. On Windows, if such a process keeps the output pipes open, the runner can still wait for it after the timeout.
 - Passing tests does not prove correctness or complete requirement coverage.
 - A generated report is evidence, not approval. A human still owns merge approval.
