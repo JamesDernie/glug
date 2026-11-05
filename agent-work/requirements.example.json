@@ -1,6 +1,6 @@
 {
   "feature": "Example material movement",
-  "design_document": "docs/design/material-movement.md",
+  "design_document": "agent-work/design.example.md",
   "baseline_commit": "",
   "requirements": [
     {
@@ -9,6 +9,11 @@
       "category": "invariant",
       "priority": "critical",
       "status": "planned",
+      "source": {
+        "kind": "explicit",
+        "ref": "\u00a72 Rules",
+        "quote": "Moving material between locations must never create or destroy mass."
+      },
       "components": [
         "MovementService",
         "MaterialLedger"
@@ -31,6 +36,11 @@
       "category": "reliability",
       "priority": "critical",
       "status": "planned",
+      "source": {
+        "kind": "inferred",
+        "ref": "\u00a72 Rules",
+        "rationale": "The design requires mass to be preserved but does not say what happens on failure; a partial update would break that rule, so a failed movement must roll back."
+      },
       "components": [
         "MovementService"
       ],

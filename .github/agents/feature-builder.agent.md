@@ -38,6 +38,7 @@ Your objective is not to produce code quickly. Your objective is to produce a co
 4. Mark each requirement with priority, affected components, and an independently verifiable acceptance criterion.
 5. Record ambiguities and contradictions. Stop for human input when a critical decision cannot safely be inferred.
 6. Validate the manifest with `python .github/agent-scripts/validate_requirements.py <manifest>`.
+7. Present every `inferred` and `assumption` requirement (the validator lists them under "Needs human sign-off") to the user for confirmation before Stage 3. Record each confirmation or rejection in `decisions.md`; change confirmed ones' `source.rationale` to note the approval, and remove or defer rejected ones.
 
 ### Stage 2 — Understand the codebase
 

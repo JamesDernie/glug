@@ -26,6 +26,7 @@
           "description",
           "category",
           "priority",
+          "source",
           "verification",
           "status"
         ],
@@ -58,6 +59,80 @@
               "blocked",
               "deferred"
             ]
+          },
+          "source": {
+            "type": "object",
+            "description": "Where the requirement comes from. 'explicit' is stated in the design and must quote it verbatim; 'inferred' follows from the design but is not stated; 'assumption' fills a gap the design leaves open. Inferred and assumption requirements need human sign-off.",
+            "required": [
+              "kind",
+              "ref"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "explicit",
+                  "inferred",
+                  "assumption"
+                ]
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Design section or heading, e.g. '\u00a73.2 Tenant isolation'."
+              },
+              "quote": {
+                "type": "string",
+                "description": "Verbatim excerpt from the design document."
+              },
+              "rationale": {
+                "type": "string",
+                "description": "Why the requirement follows from, or is needed despite, the design."
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "explicit"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "quote"
+                  ],
+                  "properties": {
+                    "quote": {
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "inferred",
+                        "assumption"
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "rationale"
+                  ],
+                  "properties": {
+                    "rationale": {
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            ],
+            "additionalProperties": true
           },
           "components": {
             "type": "array",
